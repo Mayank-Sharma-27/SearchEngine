@@ -22,11 +22,11 @@ public class SearchNaiveImplementation implements SearchService{
     }
 
     @Override
-    public Set<Integer> searchPrefix(String phrase) {
+    public Set<Integer> searchPrefix(String phrase, List<Document> documents) {
         return documents.stream()
-                .filter(doc -> doc.content.contains(phrase))
-                .map(doc -> doc.id)
-                .collect(Collectors.toList());
+                .filter(doc -> doc.getContent().contains(phrase))
+                .map(doc -> doc.getId())
+                .collect(Collectors.toSet());
     }
 
 }

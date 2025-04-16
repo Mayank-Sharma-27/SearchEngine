@@ -9,20 +9,20 @@ import java.util.Set;
 public class MemoryMappedSearchImpl implements SearchService{
     @Override
     public Set<Integer> searchWord(String word, List<Document> documents) {
-        return searchUsingMemoryMap(word);
+        return searchUsingMemoryMap(word, documents);
     }
 
     @Override
     public Set<Integer> searchPhrase(String phrase, List<Document> documents) {
-        return searchUsingMemoryMap(phrase);
+        return searchUsingMemoryMap(phrase, documents);
     }
 
     @Override
-    public Set<Integer> searchPrefix(String phrase) {
-        return searchUsingMemoryMap(phrase);
+    public Set<Integer> searchPrefix(String phrase, List<Document> documents) {
+        return searchUsingMemoryMap(phrase, documents);
     }
 
-    private Set<Integer> searchUsingMemoryMap(String word) {
+    private Set<Integer> searchUsingMemoryMap(String word, List<Document> documents) {
         String filePath = "test";
         Set<Integer> potentialDocs = Set.of();
         try (FileChannel fileChannel = (FileChannel) Files.newByteChannel(Paths.get(filePath), StandardOpenOption.READ)) {

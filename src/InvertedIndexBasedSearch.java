@@ -22,7 +22,7 @@ public class InvertedIndexBasedSearch implements SearchService{
     }
 
     @Override
-    public Set<Integer> searchPrefix(String prefix) {
+    public Set<Integer> searchPrefix(String prefix, List<Document> documents) {
         return invertedIndex
                 .entrySet()
                 .stream()

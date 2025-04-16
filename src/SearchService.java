@@ -7,5 +7,5 @@ public interface SearchService {
 
     Set<Integer> searchPhrase(String phrase,  List<Document> documents);
 
-    Set<Integer> searchPrefix(String phrase);
+    Set<Integer> searchPrefix(String phrase, List<Document> documents);
 }

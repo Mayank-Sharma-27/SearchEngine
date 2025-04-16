@@ -31,7 +31,7 @@ public class TrieBasedSearchImpl implements SearchService{
     }
 
     @Override
-    public Set<Integer> searchPrefix(String prefix) {
+    public Set<Integer> searchPrefix(String prefix, List<Document> documents) {
         TrieNode current = root;
         for (char c : prefix.toCharArray()) {
             if (!current.children.containsKey(c)) {
