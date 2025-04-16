@@ -19,7 +19,7 @@ public class SearchEngine {
     // ==============================
     // Naive Implementation
     //
-    public static List<Integer> search(List<Document> documents, String word) {
+    public static List<Integer> naiveSearch(List<Document> documents, String word) {
         return documents.stream()
                 .filter(doc -> doc.content.contains(word))
                 .map(doc -> doc.id)
@@ -64,7 +64,7 @@ public class SearchEngine {
         return potentialDocs;
     }
 
-    public static Set<Integer> searchExactPharse(String phrase, List<Document> documents) {
+    public static Set<Integer> invertedIndexSearchPhrase(String phrase, List<Document> documents) {
         Set<Integer> docs = searchPhrase(phrase);
 
         Set<Integer> result = new HashSet();
@@ -101,7 +101,7 @@ public class SearchEngine {
 
     private static TrieNode root = new TrieNode();
 
-    private static void buildTrieIndex(List<Document> documents) {
+    public static void buildTrieIndex(List<Document> documents) {
         for (Document document : documents) {
             String[] words = document.content.split("\\s+");
             for (String word : words) {
@@ -111,7 +111,7 @@ public class SearchEngine {
     }
 
     // In this each node holds the information of where the word is in the document
-    private static void insertWord(String word, int docId) {
+    public static void insertWord(String word, int docId) {
         TrieNode node = root;
 
         for (char c : word.toCharArray()) {
@@ -122,7 +122,7 @@ public class SearchEngine {
     }
 
     // In this each node holds the information of where the word is in the document
-    private static void insertWordWithDocIdInWord(String word, int docId) {
+    public static void insertWordWithDocIdInWord(String word, int docId) {
         TrieNode node = root;
 
         for (char c : word.toCharArray()) {
@@ -132,7 +132,7 @@ public class SearchEngine {
         node.documentIds.add(docId);
     }
 
-    private static Set<Integer> searchWordInTrie(String word) {
+    public static Set<Integer> searchWordInTrie(String word) {
         TrieNode node = root;
         for (char c : word.toCharArray()) {
             if (!node.children.containsKey(c)) {
@@ -144,7 +144,7 @@ public class SearchEngine {
         return node.isWord ? node.documentIds : Collections.emptySet();
     }
 
-    private static Set<Integer> searchPhraseInTrie(String phrase, List<Document> documents) {
+    public static Set<Integer> searchPhraseInTrie(String phrase, List<Document> documents) {
         TrieNode node = root;
         String[] words = phrase.split("\\s+");
         Set<Integer> candidates = new HashSet<>(searchWord(words[0].toLowerCase()));
