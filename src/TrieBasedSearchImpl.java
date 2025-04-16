@@ -19,12 +19,12 @@ public class TrieBasedSearchImpl implements SearchService{
     public Set<Integer> searchPhrase(String phrase, List<Document> documents) {
         TrieNode node = root;
         String[] words = phrase.split("\\s+");
-        Set<Integer> candidates = new HashSet<>(searchWord(words[0].toLowerCase()));
+        Set<Integer> candidates = new HashSet<>(searchWord(words[0].toLowerCase(), documents));
         for (int i = 1; i < words.length; i++) {
-            candidates.retainAll(searchWord(words[i].toLowerCase()));
+            candidates.retainAll(searchWord(words[i].toLowerCase(), documents));
         }
         return documents.stream()
-                .filter(document -> candidates.contains(document.id))
+                .filter(document -> candidates.contains(document.getId()))
                 .filter(document -> document.getContent().contains(phrase))
                 .map(document -> document.getId())
                 .collect(Collectors.toSet());
