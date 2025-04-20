@@ -1,9 +1,17 @@
+import javax.swing.tree.TreeNode;
 import java.util.*;
 import java.util.stream.Collectors;
 
 public class TrieBasedSearchImpl implements SearchService{
+    private final DocumentService documentService = new DocumentService();
+    List<Document> documents = documentService.getDocuments();
+
+    public TrieBasedSearchImpl() {
+        buildTrieIndex(documents);
+    }
+
     @Override
-    public Set<Integer> searchWord(String word, List<Document> documents) {
+    public Set<Integer> searchWord(String word) {
         TrieNode node = root;
         for (char c : word.toCharArray()) {
             if (!node.children.containsKey(c)) {
@@ -16,12 +24,12 @@ public class TrieBasedSearchImpl implements SearchService{
     }
 
     @Override
-    public Set<Integer> searchPhrase(String phrase, List<Document> documents) {
+    public Set<Integer> searchPhrase(String phrase) {
         TrieNode node = root;
         String[] words = phrase.split("\\s+");
-        Set<Integer> candidates = new HashSet<>(searchWord(words[0].toLowerCase(), documents));
+        Set<Integer> candidates = new HashSet<>(searchWord(words[0].toLowerCase()));
         for (int i = 1; i < words.length; i++) {
-            candidates.retainAll(searchWord(words[i].toLowerCase(), documents));
+            candidates.retainAll(searchWord(words[i].toLowerCase()));
         }
         return documents.stream()
                 .filter(document -> candidates.contains(document.getId()))
@@ -31,7 +39,7 @@ public class TrieBasedSearchImpl implements SearchService{
     }
 
     @Override
-    public Set<Integer> searchPrefix(String prefix, List<Document> documents) {
+    public Set<Integer> searchPrefix(String prefix) {
         TrieNode current = root;
         for (char c : prefix.toCharArray()) {
             if (!current.children.containsKey(c)) {
@@ -42,21 +50,72 @@ public class TrieBasedSearchImpl implements SearchService{
         return current.documentIds;
     }
 
+    @Override
+    public List<String> autoCompleteSuggestions(String prefix) {
+        if (prefix.isEmpty()) {
+            return Collections.emptyList();
+        }
+        TrieNode node = searchPrefixNode(prefix);
+        if (node == null) {
+            return Collections.emptyList();
+        }
+
+        List<String> suggestions = new ArrayList<>();
+        collectWords(node, prefix, suggestions);
+        Collections.sort(suggestions);
+        return suggestions;
+    }
+
+    private void collectWords(TrieNode node, String currentPrefix, List<String> suggestions) {
+        if (currentPrefix.isEmpty()) {
+            return;
+        }
+        if (!node.documentIds.isEmpty()) {
+            suggestions.add(currentPrefix);
+        }
+        if (suggestions.size() >= 20) {
+            return;
+        }
+
+        for (char ch : node.children.keySet().stream().sorted().toList()) {
+            collectWords(node.children.get(ch), currentPrefix + ch, suggestions);
+            if (suggestions.size() >= 20) {
+                return;
+            }
+        }
+    }
+
+    private TrieNode searchPrefixNode(String string) {
+        TrieNode node = root;
+        for (char c : string.toCharArray()) {
+            node = node.children.get(c);
+            if (node == null) {
+                return  null;
+            }
+        }
+        return node;
+    }
+
     private static class TrieNode {
         private Map<Character, TrieNode> children = new HashMap<>();
         Set<Integer> documentIds = new HashSet<>();
         boolean isWord = false;
 
-        public TrieNode() {}
+        public TrieNode() {
+
+        }
     }
 
     private static TrieNode root = new TrieNode();
 
     public static void buildTrieIndex(List<Document> documents) {
         for (Document document : documents) {
-            String[] words = document.getContent().split("\\s+");
+            List<String> words = document.getContent()
+                    .stream()
+                    .map(token -> token.getWord())
+                    .collect(Collectors.toList());
             for (String word : words) {
-
+                insertWord(word, document.getId());
             }
         }
     }

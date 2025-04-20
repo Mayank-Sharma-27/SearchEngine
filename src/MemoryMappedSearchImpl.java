@@ -3,26 +3,26 @@ import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
-import java.util.List;
 import java.util.Set;
 
 public class MemoryMappedSearchImpl implements SearchService{
+
     @Override
-    public Set<Integer> searchWord(String word, List<Document> documents) {
-        return searchUsingMemoryMap(word, documents);
+    public Set<Integer> searchWord(String word) {
+        return searchUsingMemoryMap(word);
     }
 
     @Override
-    public Set<Integer> searchPhrase(String phrase, List<Document> documents) {
-        return searchUsingMemoryMap(phrase, documents);
+    public Set<Integer> searchPhrase(String phrase) {
+        return searchUsingMemoryMap(phrase);
     }
 
     @Override
-    public Set<Integer> searchPrefix(String phrase, List<Document> documents) {
-        return searchUsingMemoryMap(phrase, documents);
+    public Set<Integer> searchPrefix(String phrase) {
+        return searchUsingMemoryMap(phrase);
     }
 
-    private Set<Integer> searchUsingMemoryMap(String word, List<Document> documents) {
+    private Set<Integer> searchUsingMemoryMap(String word) {
         String filePath = "test";
         Set<Integer> potentialDocs = Set.of();
         try (FileChannel fileChannel = (FileChannel) Files.newByteChannel(Paths.get(filePath), StandardOpenOption.READ)) {

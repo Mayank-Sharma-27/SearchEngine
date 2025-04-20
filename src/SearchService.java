@@ -3,9 +3,19 @@ import java.util.Set;
 
 public interface SearchService {
 
-    Set<Integer> searchWord(String word, List<Document> documents);
+    default Set<Integer> searchWord(String word) {
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
 
-    Set<Integer> searchPhrase(String phrase,  List<Document> documents);
+    default Set<Integer> searchPhrase(String phrase) {
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
 
-    Set<Integer> searchPrefix(String phrase, List<Document> documents);
+    default Set<Integer> searchPrefix(String phrase) {
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
+
+     default List<String> autoCompleteSuggestions(String prefix) {
+         throw new UnsupportedOperationException("Not supported yet.");
+     }
 }

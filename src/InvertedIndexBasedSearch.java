@@ -3,53 +3,76 @@ import java.util.stream.Collectors;
 
 public class InvertedIndexBasedSearch implements SearchService{
 
+    private Map<String, Map<Integer, List<Integer>>> invertedIndex;
 
-    private static Map<String, Set<Integer>> invertedIndex = new HashMap<>();
-    @Override
-    public Set<Integer> searchWord(String word, List<Document> documents) {
-        return invertedIndex.getOrDefault(word, Collections.emptySet());
+    public InvertedIndexBasedSearch() {
+      this.invertedIndex = buildInvertedIndex();
     }
 
     @Override
-    public Set<Integer> searchPhrase(String phrase, List<Document> documents) {
-        String[] words = phrase.split("\\s+");
-        Set<Integer> potentialDocs = new HashSet<>(searchWord(words[0],documents));
-        for (int i = 1; i < words.length; i++) {
-            potentialDocs.retainAll(searchWord(words[i], documents));
+    public Set<Integer> searchWord(String word) {
+        return invertedIndex.get(word) != null ? new HashSet<>(invertedIndex.get(word).keySet()) : new HashSet<>();
+    }
+
+    @Override
+    public Set<Integer> searchPhrase(String phrase) {
+        Set<Integer> documents = new HashSet<>();
+         String[] words = phrase.split("\\s+");
+        Map<Integer, List<Integer>> firstWordDocuments = invertedIndex.get(words[0]);
+
+        for (Integer id : firstWordDocuments.keySet()) {
+            List<Integer> wordPositions = firstWordDocuments.get(id);
+
+            for (int wordPosition : wordPositions) {
+               boolean match = true;
+                for (int i = 1; i < words.length; i++) {
+                int expectedWordPosition = wordPosition + i;
+                List<Integer> nextWordDocuments = invertedIndex
+                        .getOrDefault(words[i], Collections.emptyMap())
+                        .getOrDefault(id, Collections.emptyList());
+                if (!nextWordDocuments.contains(expectedWordPosition)) {
+                    match = false;
+                    break;
+                }
+                }
+                if (match) {
+                    documents.add(id);
+                }
+            }
         }
 
-        return potentialDocs;
+        return documents;
     }
 
     @Override
-    public Set<Integer> searchPrefix(String prefix, List<Document> documents) {
+    public Set<Integer> searchPrefix(String prefix) {
         return invertedIndex
                 .entrySet()
                 .stream()
                 .filter(entry -> entry.getKey().startsWith(prefix))
-                .flatMap(entry -> entry.getValue()
+                .flatMap(entry -> entry.getValue().keySet()
                         .stream())
                 .collect(Collectors.toSet());
     }
-
-    // O(n)
-    // ==============================
-    // Naive Implementation
-    //
 
     // Followup 2
     // ================================
     // Inverted Index Implementation
     // ================================
-    private void buildInvertedIndex(List<Document> documents) {
-        documents.stream()
-                .filter(doc -> !invertedIndex.containsKey(doc.getId()))
-                .forEach(doc -> {
-                    String[] words = doc.getContent().split("\\s+");
-                    for (String word : words) {
-                        invertedIndex.computeIfAbsent(word, k -> new HashSet<>()).add(doc.getId());
-                    }
-                });
+    private Map<String, Map<Integer, List<Integer>>> buildInvertedIndex() {
+        DocumentService documentService = new DocumentService();
+        List<Document> documents = documentService.getDocuments();
+        Map<String, Map<Integer, List<Integer>>> index = new HashMap<>();
+        for (Document document : documents) {
+            for (Document.Token token : document.getContent()) {
+                index
+                        .computeIfAbsent(token.getWord(), k -> new HashMap<>())
+                        .computeIfAbsent(document.getId(), k -> new ArrayList<>())
+                        .add(token.getPosition());
+
+            }
+        }
+        return index;
     }
 
 }
