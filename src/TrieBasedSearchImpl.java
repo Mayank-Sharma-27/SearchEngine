@@ -1,15 +1,13 @@
-import javax.swing.tree.TreeNode;
 import java.util.*;
 import java.util.stream.Collectors;
 
 public class TrieBasedSearchImpl implements SearchService{
     private final DocumentService documentService = new DocumentService();
     List<Document> documents = documentService.getDocuments();
-
+    private static TrieNode root = new TrieNode();
     public TrieBasedSearchImpl() {
         buildTrieIndex(documents);
     }
-
     @Override
     public Set<Integer> searchWord(String word) {
         TrieNode node = root;
@@ -106,7 +104,7 @@ public class TrieBasedSearchImpl implements SearchService{
         }
     }
 
-    private static TrieNode root = new TrieNode();
+
 
     public static void buildTrieIndex(List<Document> documents) {
         for (Document document : documents) {
