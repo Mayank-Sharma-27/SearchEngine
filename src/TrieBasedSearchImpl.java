@@ -4,6 +4,16 @@ import java.util.stream.Collectors;
 public class TrieBasedSearchImpl implements SearchService{
     private final DocumentService documentService = new DocumentService();
     List<Document> documents = documentService.getDocuments();
+
+    private static class TrieNode {
+        private Map<Character, TrieNode> children = new HashMap<>();
+        Set<Integer> documentIds = new HashSet<>();
+        boolean isWord = false;
+
+        public TrieNode() {
+
+        }
+    }
     private static TrieNode root = new TrieNode();
     public TrieBasedSearchImpl() {
         buildTrieIndex(documents);
@@ -94,18 +104,6 @@ public class TrieBasedSearchImpl implements SearchService{
         return node;
     }
 
-    private static class TrieNode {
-        private Map<Character, TrieNode> children = new HashMap<>();
-        Set<Integer> documentIds = new HashSet<>();
-        boolean isWord = false;
-
-        public TrieNode() {
-
-        }
-    }
-
-
-
     public static void buildTrieIndex(List<Document> documents) {
         for (Document document : documents) {
             List<String> words = document.getContent()
@@ -124,9 +122,10 @@ public class TrieBasedSearchImpl implements SearchService{
 
         for (char c : word.toCharArray()) {
             node = node.children.computeIfAbsent(c, k -> new TrieNode());
-            node.documentIds.add(docId);
+
         }
         node.isWord = true;
+        node.documentIds.add(docId);
     }
 
     // In this each node holds the information of where the word is in the document

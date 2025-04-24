@@ -55,6 +55,79 @@ public class InvertedIndexBasedSearch implements SearchService{
                 .collect(Collectors.toSet());
     }
 
+    private Set<Integer> searchBooleanQueue(String query) {
+        Stack<Set<Integer>> operands = new Stack<>();
+        Stack<String> operators = new Stack<>();
+        List<String> tokens = tokenize(query);
+        for (String token : tokens) {
+            if (token.equals("(")) {
+                operators.push(token);
+            } else if (token.equals(")")) {
+                while (!operators.empty() && operators.peek().equals("(")) {
+                    applyOperator(operands, operators.pop());
+                }
+                operators.pop();
+            } else if (token.equals("AND") || token.equals("OR")) {
+                while (!operators.empty() && precedence(operators.peek()) >= precedence(token)) {
+                    applyOperator(operands, operators.pop());
+                }
+                operators.push(token);
+            } else {
+                operands.push(searchWord(token));
+            }
+
+        }
+
+        while (!operators.isEmpty()) {
+            applyOperator(operands, operators.pop());
+        }
+
+        return operands.isEmpty() ? new HashSet<>() : operands.pop();
+    }
+
+    private int precedence(String op) {
+        if (op.equals("AND")) return 2;
+        if (op.equals("OR")) return 1;
+        return 0;
+    }
+
+    private void applyOperator(Stack<Set<Integer>> operands, String op) {
+        Set<Integer> right = operands.pop();
+        Set<Integer> left = operands.pop();
+        if (op.equals("AND")) {
+            left.retainAll(right); // intersection
+            operands.push(left);
+        } else if (op.equals("OR")) {
+            left.addAll(right); // union
+            operands.push(left);
+        }
+    }
+
+    private List<String> tokenize(String word) {
+        List<String> tokens = new ArrayList<>();
+        StringBuilder sb = new StringBuilder();
+        for (char c : word.toCharArray()) {
+            if (c == '(' || c == ')') {
+                if (sb.length() > 0) {
+                    tokens.add(sb.toString());
+                    sb.setLength(0);
+                }
+                tokens.add(String.valueOf(c));
+            } else if (Character.isWhitespace(c)) {
+                if (sb.length() > 0) {
+                    tokens.add(sb.toString().trim());
+                    sb.setLength(0);
+                }
+            } else {
+                sb.append(c);
+            }
+        }
+        if (sb.length() > 0) {
+            tokens.add(sb.toString().trim());
+        }
+        return tokens;
+    }
+
     // Followup 2
     // ================================
     // Inverted Index Implementation
