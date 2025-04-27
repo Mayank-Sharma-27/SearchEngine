@@ -132,6 +132,8 @@ public class InvertedIndexBasedSearch implements SearchService{
     // ================================
     // Inverted Index Implementation
     // ================================
+    // Let N be the number of documents.
+    // Let W be the total number of words across all documents.
     private Map<String, Map<Integer, List<Integer>>> buildInvertedIndex() {
         DocumentService documentService = new DocumentService();
         List<Document> documents = documentService.getDocuments();
