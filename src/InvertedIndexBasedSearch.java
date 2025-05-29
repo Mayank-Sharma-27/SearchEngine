@@ -1,48 +1,46 @@
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class InvertedIndexBasedSearch implements SearchService{
+public class InvertedIndexBasedSearch implements SearchService {
 
     private Map<String, Map<Integer, List<Integer>>> invertedIndex;
 
     public InvertedIndexBasedSearch() {
-      this.invertedIndex = buildInvertedIndex();
+        this.invertedIndex = buildInvertedIndex();
     }
 
     @Override
     public Set<Integer> searchWord(String word) {
-        return invertedIndex.get(word) != null ? new HashSet<>(invertedIndex.get(word).keySet()) : new HashSet<>();
+        return invertedIndex.get(word) == null ? Collections.emptySet() : invertedIndex.get(word).keySet();
     }
 
-    @Override
-    public Set<Integer> searchPhrase(String phrase) {
-        Set<Integer> documents = new HashSet<>();
-         String[] words = phrase.split("\\s+");
-        Map<Integer, List<Integer>> firstWordDocuments = invertedIndex.get(words[0]);
+    public Set<Integer> phraseSearch(String phrase) {
+        Set<Integer> result = new HashSet();
+        String[] words = phrase.split("\\s+");
+        Map<Integer, List<Integer>> documentsWithWords = invertedIndex.get(words[0]);
 
-        for (Integer id : firstWordDocuments.keySet()) {
-            List<Integer> wordPositions = firstWordDocuments.get(id);
+        for (int id : documentsWithWords.keySet()) {
 
-            for (int wordPosition : wordPositions) {
-               boolean match = true;
+
+            for (int index : documentsWithWords.get(id)) {
+                boolean found = true;
                 for (int i = 1; i < words.length; i++) {
-                int expectedWordPosition = wordPosition + i;
-                List<Integer> nextWordDocuments = invertedIndex
-                        .getOrDefault(words[i], Collections.emptyMap())
-                        .getOrDefault(id, Collections.emptyList());
-                if (!nextWordDocuments.contains(expectedWordPosition)) {
-                    match = false;
-                    break;
+                    int requiredIndex =index + i;
+                            List <Integer> possibleIndexes = invertedIndex
+                                    .getOrDefault(words[i], new HashMap<>())
+                                    .getOrDefault(id, new ArrayList<>());
+                            if (!possibleIndexes.contains(requiredIndex)) {
+                                found = false;
+                            }
                 }
-                }
-                if (match) {
-                    documents.add(id);
+                if (found) {
+                    result.add(id);
                 }
             }
         }
-
-        return documents;
+        return result;
     }
+
 
     @Override
     public Set<Integer> searchPrefix(String prefix) {
@@ -56,52 +54,71 @@ public class InvertedIndexBasedSearch implements SearchService{
     }
 
     private Set<Integer> searchBooleanQueue(String query) {
-        Stack<Set<Integer>> operands = new Stack<>();
+        // Stack to hold intermediate document sets for operands (results of searchWord)
+        Stack<Set<Integer>> intermediateStack = new Stack<>();
+
+        // Stack to hold logical operators (AND, OR, parentheses)
         Stack<String> operators = new Stack<>();
+
+        // Tokenize the input query string into words and operators
         List<String> tokens = tokenize(query);
+
         for (String token : tokens) {
             if (token.equals("(")) {
+                // Push opening parenthesis to the operator stack
                 operators.push(token);
             } else if (token.equals(")")) {
-                while (!operators.empty() && operators.peek().equals("(")) {
-                    applyOperator(operands, operators.pop());
+                // When a closing parenthesis is found, process the expression inside
+                // Keep applying operators until matching "(" is found
+                while (!operators.empty() && !operators.peek().equals("(")) {
+                    applyOperator(intermediateStack, operators.pop());
                 }
+                // Discard the matching "("
                 operators.pop();
             } else if (token.equals("AND") || token.equals("OR")) {
+                // While there are operators with higher or equal precedence, apply them
                 while (!operators.empty() && precedence(operators.peek()) >= precedence(token)) {
-                    applyOperator(operands, operators.pop());
+                    applyOperator(intermediateStack, operators.pop());
                 }
+                // Push the current operator to the stack
                 operators.push(token);
             } else {
-                operands.push(searchWord(token));
+                // It's a search term, perform word search and push result set to operand stack
+                intermediateStack.push(searchWord(token));
             }
-
         }
 
+        // Apply any remaining operators
         while (!operators.isEmpty()) {
-            applyOperator(operands, operators.pop());
+            applyOperator(intermediateStack, operators.pop());
         }
 
-        return operands.isEmpty() ? new HashSet<>() : operands.pop();
+        // Final result is on top of operand stack
+        return intermediateStack.isEmpty() ? new HashSet<>() : intermediateStack.pop();
     }
 
+    // Assign precedence to operators (AND > OR)
     private int precedence(String op) {
         if (op.equals("AND")) return 2;
         if (op.equals("OR")) return 1;
         return 0;
     }
 
-    private void applyOperator(Stack<Set<Integer>> operands, String op) {
-        Set<Integer> right = operands.pop();
-        Set<Integer> left = operands.pop();
+    // Apply the logical operator to top two sets on the operand stack
+    private void applyOperator(Stack<Set<Integer>> intermediateStack, String op) {
+        Set<Integer> right = intermediateStack.pop(); // right operand
+        Set<Integer> left = intermediateStack.pop();  // left operand
         if (op.equals("AND")) {
-            left.retainAll(right); // intersection
-            operands.push(left);
+            // Intersection: documents that appear in both sets
+            left.retainAll(right);
+            intermediateStack.push(left);
         } else if (op.equals("OR")) {
-            left.addAll(right); // union
-            operands.push(left);
+            // Union: documents that appear in either set
+            left.addAll(right);
+            intermediateStack.push(left);
         }
     }
+
 
     private List<String> tokenize(String word) {
         List<String> tokens = new ArrayList<>();
@@ -128,6 +145,32 @@ public class InvertedIndexBasedSearch implements SearchService{
         return tokens;
     }
 
+    private List<String> tokenizeV2(String phrase) {
+        List<String> tokens = new ArrayList<>();
+        StringBuilder sb = new StringBuilder();
+
+        for (char c: phrase.toCharArray()) {
+            if (c == '(' || c == ')') {
+                if (sb.length() > 0) {
+                    tokens.add(sb.toString());
+                    sb.setLength(0);
+                }
+                sb.append(c);
+            } else if (Character.isWhitespace(c)) {
+                if (sb.length() > 0) {
+                    tokens.add(sb.toString());
+                    sb.setLength(0);
+                }
+            } else {
+                sb.append(c);
+            }
+        }
+        if (sb.length() > 0) {
+            tokens.add(sb.toString().trim());
+        }
+        return tokens;
+    }
+
     // Followup 2
     // ================================
     // Inverted Index Implementation
@@ -135,19 +178,17 @@ public class InvertedIndexBasedSearch implements SearchService{
     // Let N be the number of documents.
     // Let W be the total number of words across all documents.
     private Map<String, Map<Integer, List<Integer>>> buildInvertedIndex() {
-        DocumentService documentService = new DocumentService();
-        List<Document> documents = documentService.getDocuments();
-        Map<String, Map<Integer, List<Integer>>> index = new HashMap<>();
+        DocumentService docService = new DocumentService();
+        List<Document> documents = docService.getDocuments();
+        Map<String, Map<Integer, List<Integer>>> invertedIndex = new HashMap<>();
         for (Document document : documents) {
-            for (Document.Token token : document.getContent()) {
-                index
-                        .computeIfAbsent(token.getWord(), k -> new HashMap<>())
+            for (Document.Token word : document.getContent()) {
+                invertedIndex.computeIfAbsent(word.getWord(), k -> new HashMap<>())
                         .computeIfAbsent(document.getId(), k -> new ArrayList<>())
-                        .add(token.getPosition());
-
+                        .add(word.getIndex());
             }
         }
-        return index;
+        return invertedIndex;
     }
 
 }

@@ -1,3 +1,4 @@
+import javax.swing.tree.TreeNode;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -60,34 +61,33 @@ public class TrieBasedSearchImpl implements SearchService{
 
     @Override
     public List<String> autoCompleteSuggestions(String prefix) {
-        if (prefix.isEmpty()) {
-            return Collections.emptyList();
-        }
-        TrieNode node = searchPrefixNode(prefix);
-        if (node == null) {
-            return Collections.emptyList();
-        }
+       if (prefix.isEmpty()) {
+           return Collections.emptyList();
+       }
 
-        List<String> suggestions = new ArrayList<>();
-        collectWords(node, prefix, suggestions);
-        Collections.sort(suggestions);
-        return suggestions;
+       TrieNode prefixNode =searchPrefixNode(prefix);
+
+       if (prefixNode == null) {
+           return Collections.emptyList();
+       }
+       List<String> suggestions = new ArrayList<>();
+       collectWords(prefixNode, prefix, suggestions);
+       return suggestions;
     }
 
     private void collectWords(TrieNode node, String currentPrefix, List<String> suggestions) {
         if (currentPrefix.isEmpty()) {
             return;
         }
-        if (!node.documentIds.isEmpty()) {
-            suggestions.add(currentPrefix);
-        }
-        if (suggestions.size() >= 20) {
+
+        if (suggestions.size() == 20) {
             return;
         }
 
-        for (char ch : node.children.keySet().stream().sorted().toList()) {
-            collectWords(node.children.get(ch), currentPrefix + ch, suggestions);
-            if (suggestions.size() >= 20) {
+        for (char c : node.children.keySet()) {
+            String prefix = currentPrefix + c;
+            collectWords(node.children.get(c), prefix, suggestions);
+            if (suggestions.size() == 20) {
                 return;
             }
         }
@@ -98,7 +98,7 @@ public class TrieBasedSearchImpl implements SearchService{
         for (char c : string.toCharArray()) {
             node = node.children.get(c);
             if (node == null) {
-                return  null;
+                return null;
             }
         }
         return node;
